@@ -1,4 +1,4 @@
-# DeepSight: Advanced Real-Time Object Detection in Maritime Environments
+#  🚢 Advanced Ship-Models Real-Time Object Detection & Race Analysis (YOLOv8n)
 
 DeepSight is a machine learning project that leverages YOLOv8n, a powerful object detection model, for analyzing maritime environments. The goal of this project is to identify and classify objects such as buoys, vessel numbers, models with numbers, models without numbers, and trails left by vessels. This solution aims to enhance maritime safety by providing real-time insights using computer vision techniques.
 
@@ -27,6 +27,107 @@ DeepSight is a machine learning project that leverages YOLOv8n, a powerful objec
 - **Training and Customization**: Includes training scripts for customizing the model with new data.
 - **Deployment Ready**: Can be deployed using Flask, Docker, or cloud services for real-time inference.
 - **Mobility Deployment**: Model can be deployed in the modile phone on in another.
+
+## 🌟 Features
+
+Our project is packed with exciting features:
+
+- 🔍 **YOLOv8n Model**: State-of-the-art object detection for 6 classes of maritime objects
+- 🖼️ **Data Augmentation**: Enhancing our training data for robust model performance
+- 🏋️ **Advanced Training**: Hyperparameter optimization and early stopping for optimal performance
+- 🖥️ **HPC Integration**: Parallel training and distributed data processing for faster development
+- 🌐 **Flask API**: Deploy your model with ease and integrate it into any system
+- 📹 **Multi-Camera Processing**: Analyze races from multiple angles simultaneously
+- 🎥 **Live Viewing**: Watch the race unfold with real-time object detection
+- 🔢 **Intelligent Counting**: Keep track of completed rounds for numbered ships
+- 👁️ **Occlusion Handling**: Don't lose track of ships, even when they overlap
+
+## 🏗️ Project Structure
+
+Our project is organized into several key components:
+
+- `main.py`: The heart of our system, coordinating all operations
+- `models.py`: Home to our YOLOModel and EnsembleModel classes
+- `training.py`: Where the magic of model training happens
+- `data_augmentation.py`: Spicing up our training data
+- `data_processing.py`: Keeping our data neat and tidy
+- `data_loading.py`: Efficient data loading for training
+- `image_processing.py`: Handling all things image-related
+- `video_processor.py`: Tackling video inputs with ease
+- `ship_tracker.py`: Keeping an eye on every ship in the race
+- `round_counter.py`: The digital scorekeeper for our maritime races
+- `result_generator.py`: Crafting beautiful and informative race summaries
+- `deploy.py`: Launching our model into the world
+- `HPC_integration.py`: Supercharging our training with high-performance computing
+
+## 🚀 Getting Started
+
+Ready to dive in? Here's how to get started:
+
+1. Clone this repository:   ```
+   git clone https://github.com/kozgunov/modelling-research.git   ```
+2. Install the required packages:   ```
+   pip install -r requirements.txt   ```
+
+## 🎮 Usage
+
+Our system is versatile and easy to use. Here are some common operations:
+
+### 🔧 Data Preparation
+
+Prepare your dataset with:
+
+- resize it to 600x600 size
+- transfer photos to .png
+
+## 🧠 Transfer Learning
+
+We're standing on the shoulders of giants! Our project utilizes transfer learning, starting with the pre-trained YOLOv8n model. This approach allows us to leverage knowledge from vast datasets and apply it to our specific maritime detection task.
+
+## 🔧 Advanced Features
+
+- **Gradient Accumulation**: Implemented for effective training with limited GPU memory.
+- **Mixed Precision Training**: Utilizing FP16 for faster training without sacrificing accuracy.
+- **Early Stopping**: Prevents overfitting and saves time by stopping training when performance plateaus.
+- **Distributed Training**: Leverage multiple GPUs or nodes for faster training.
+- **Occlusion Handling**: Sophisticated tracking to maintain object identity even when ships overlap.
+
+## 📊 Results and Visualization
+
+After processing a race, you'll find:
+- A summary video with annotations
+- A text file with race results
+- A visualization of the race results
+
+## 🤝 Contributing
+
+We love contributions! If you have ideas for improvements or new features, please:
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+## 🙏 Acknowledgments
+
+- The YOLOv8 team for their incredible object detection model
+- Our maritime partners for providing real-world racing footage
+- The open-source community for their invaluable tools and libraries
+
+Set sail with our Ship Detection and Race Analysis system today! 🚢🏁
+
+
+
+
+
+
+
+
 
 ## 5 Classes Detected
 
