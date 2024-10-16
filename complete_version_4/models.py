@@ -8,73 +8,32 @@ import matplotlib.pyplot as plt
 
 class YOLOModel:
     def __init__(self, model_name='yolov8n', num_classes=6):
-        """
-        Initialize the YOLO model.
-        
-        Args:
-        model_name (str): Name of the YOLO model to use.
-        num_classes (int): Number of classes to detect.
-        """
         super().__init__()
-        self.model = torch.hub.load('ultralytics/yolov8', model_name, pretrained=True, trust_repo=True)
+        self.model = torch.hub.load('ultralytics/yolov8', model_name, pretrained=True, trust_repo=True) # initialize the YOLO
         self.model.model[-1].nc = num_classes  # Set the number of classes
         self.model = torch.jit.script(self.model)  # Optimize the model using TorchScript
 
     def forward(self, x):
-        """
-        Forward pass of the model.
-        
-        Args:
-        x (torch.Tensor): Input tensor.
-        
-        Returns:
-        torch.Tensor: Model output.
-        """
         return self.model(x)
 
     def get_device(self):
-        """
-        Get the device the model is on.
-        
-        Returns:
-        torch.device: The device (CPU or GPU) the model is on.
-        """
-        return self.model.device
+        return self.model.device # has to be GPU
 
     def apply_pruning(self, amount=0.4):
-        """
-        Apply pruning to the model to reduce its size.
-        
-        Args:
-        amount (float): The amount of pruning to apply (0.0 to 1.0).
-        """
         for layer in self.model.modules():
             if isinstance(layer, torch.nn.Conv2d):
                 prune.ln_structured(layer, name='weight', amount=amount, n=2, dim=0)
         print("Pruning applied to model.")
 
     def apply_quantization(self):
-        """
-        Apply quantization to the model to reduce its size and improve inference speed.
-        """
         self.model.eval()
         self.model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
         torch.quantization.prepare(self.model, inplace=True)
         torch.quantization.convert(self.model, inplace=True)
         print("Quantization applied to model.")
 
-    def apply_distillation(self, train_loader, criterion, optimizer, teacher_model, alpha=0.5, temperature=3.0):
-        """
-        Apply knowledge distillation to transfer knowledge from a teacher model to this model.
-        
-        Args:
-        train_loader (DataLoader): DataLoader for training data.
-        criterion: Loss function.
-        optimizer: Optimizer for model parameters.
-        teacher_model: The teacher model to distill knowledge from.
-        alpha (float): Weight for balancing student and teacher loss.
-        temperature (float): Temperature for softening probability distributions.
-        """
+
+    def apply_distillation(self, train_loader, criterion, optimizer, teacher_model, alpha=0.5, temperature=3.0): # may be extra for unsupervise learning
         self.model.train()
         teacher_model.eval()
         for images, labels in train_loader:
@@ -94,38 +53,15 @@ class YOLOModel:
 
 class EnsembleModel:
     def __init__(self, models):
-        """
-        Initialize an ensemble of models.
-        
-        Args:
-        models (list): List of models to ensemble.
-        """
-        self.models = models
+        self.models = models # ensemble models
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def __call__(self, x):
-        """
-        Forward pass of the ensemble model.
-        
-        Args:
-        x (torch.Tensor): Input tensor.
-        
-        Returns:
-        torch.Tensor: Ensemble model output.
-        """
         results = [model(x) for model in self.models]
-        # Implement ensemble logic here (e.g., averaging, voting)
-        return results[0]  # Placeholder, replace with actual ensemble logic
+        # -----------------apply ensemble logic like averaging, voting -------------------------------------------------
+        return results[0]  
 
-    def predict(self, image_path, iou_threshold=0.5, conf_threshold=0.3):
-        """
-        Make predictions on an image using the ensemble model.
-        
-        Args:
-        image_path (str): Path to the input image.
-        iou_threshold (float): IoU threshold for NMS.
-        conf_threshold (float): Confidence threshold for detections.
-        """
+    def predict(self, image_path, iou_threshold=0.5, conf_threshold=0.3): # predicts on an image using the ensemble model.
         image = Image.open(image_path).convert('RGB')
         image_tensor = torch.tensor(np.array(image) / 255.0).permute(2, 0, 1).unsqueeze(0).float().to(self.device)
 
@@ -135,7 +71,7 @@ class EnsembleModel:
             with torch.no_grad():
                 results = model(image_tensor)
 
-            for xmin, ymin, xmax, ymax, conf, cls in results.xyxy[0].cpu().numpy():
+            for xmin, ymin, xmax, ymax, conf, cls in results.xyxy[0].cpu().numpy(): # the box
                 if conf > conf_threshold:
                     all_boxes.append([xmin, ymin, xmax, ymax])
                     all_scores.append(conf)
@@ -152,16 +88,8 @@ class EnsembleModel:
 
         self.visualize_results(image, final_boxes, final_scores, final_classes)
 
-    def visualize_results(self, image, boxes, scores, classes):
-        """
-        Visualize detection results on an image.
-        
-        Args:
-        image (PIL.Image): Input image.
-        boxes (np.array): Bounding boxes.
-        scores (np.array): Confidence scores.
-        classes (np.array): Class labels.
-        """
+    def visualize_results(self, image, boxes, scores, classes): 
+        # vsualize detection results on an image
         plt.figure(figsize=(10, 10))
         plt.imshow(image)
         plt.axis('off')
