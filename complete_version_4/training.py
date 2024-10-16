@@ -1,20 +1,21 @@
 import torch
 from torch import optim
 from pathlib import Path
-import time
 from torchmetrics.detection import MeanAveragePrecision
 from torchmetrics import Accuracy, Precision, Recall, F1Score, ConfusionMatrix
+import torch.cuda.amp as amp
+import optuna
+from HPC_integration import parallel_model_training, hyperparameter_tuning_hpc
 from torchvision.ops import box_iou
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
-from HPC_integration import parallel_model_training, hyperparameter_tuning_hpc
-import optuna
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from PIL import Image
-import torch.cuda.amp as amp
+import time
 
-def save_checkpoint(model, optimizer, epoch, filepath):
+
+def save_checkpoint(model, optimizer, epoch, filepath): # checkpoint)
     torch.save(
         {
             'epoch': epoch,
@@ -22,6 +23,7 @@ def save_checkpoint(model, optimizer, epoch, filepath):
             'optimizer_state_dict': optimizer.state_dict()
         }, filepath)
     print(f"Model checkpoint saved successfully at {filepath}")
+
 
 class Trainer:
     def __init__(self, model, train_dir, num_epochs, output_dir, world_size=1, patience=10):
@@ -51,11 +53,11 @@ class Trainer:
     def train(self):
         train_loader = self.get_data_loader()
         val_loader = self.get_data_loader(validation=True)
-        optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+        optimizer = optim.Adam(self.model.parameters(), lr=0.001) # 0.001 = convergent
         criterion = torch.nn.CrossEntropyLoss()
 
         for epoch in range(self.num_epochs):
-            train_loss = self.train_epoch(train_loader, optimizer, criterion)
+            train_loss = self.train_epoch(train_loader, optimizer, criterion) # wasn't used!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             val_loss = self.validate(val_loader, criterion)
             
             if val_loss < self.best_val_loss:
@@ -82,6 +84,7 @@ class Trainer:
         return val_loss / len(val_loader)
 
     def get_data_loader(self, validation=False):
+        # implies that all the data has already uploaded!!!
         from data_loading import get_dataloader
         if validation:
             return get_dataloader(self.train_dir.parent / 'val', batch_size=32, num_workers=4)
@@ -95,11 +98,9 @@ class Trainer:
         for batch_idx, (images, labels) in enumerate(self.get_data_loader()):
             images, labels = images.to(self.device), labels.to(self.device)
             optimizer.zero_grad()
-            
             with amp.autocast():
                 outputs = self.model(images)
                 loss = criterion(outputs, labels)
-            
             self.scaler.scale(loss).backward()
             self.scaler.step(optimizer)
             self.scaler.update()
@@ -117,11 +118,12 @@ class Trainer:
         recall = self.recall(preds, labels)
         f1 = self.f1_score(preds, labels)
         cm = self.confusion_matrix(preds, labels)
+        # -----------------------------------add more complex metrics!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         print(f'Epoch {epoch + 1}/{self.num_epochs}, Loss: {loss:.4f}')
         print(f'Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1-score: {f1:.4f}')
         
-        # Visualization code for confusion matrix...
+        #  confusion matrix...
 
     def save_checkpoints(self, epoch, optimizer, loss):
         if loss < self.best_loss:
@@ -153,7 +155,7 @@ class Trainer:
         return self.best_loss
 
     def train_with_gradient_accumulation(self, accumulation_steps=4):
-        optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+        optimizer = optim.AdamW(self.model.parameters(), lr=0.001) # adamW is optimal for the task (confirmed)
         criterion = torch.nn.CrossEntropyLoss()
         
         for epoch in range(self.num_epochs):
@@ -177,4 +179,4 @@ class Trainer:
                 running_loss += loss.item() * accumulation_steps
             
             epoch_loss = running_loss / len(self.get_data_loader())
-            self.log_metrics(epoch, epoch_loss, [], [])  # Update this line to pass actual predictions and labels
+            self.log_metrics(epoch, epoch_loss, [], [])  
