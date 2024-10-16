@@ -1,7 +1,7 @@
 import albumentations as A
 import cv2
-import numpy as np
 from pathlib import Path
+
 
 class DataAugmentation:
     def __init__(self):
@@ -22,12 +22,12 @@ class DataAugmentation:
             A.OneOf([
                 A.OpticalDistortion(p=0.3),
                 A.GridDistortion(p=0.1),
-                A.IAAPiecewiseAffine(p=0.3),
+                A.IAAPiecewiseAffine(p=0.3), # may be wrong
             ], p=0.2),
             A.OneOf([
                 A.CLAHE(clip_limit=2),
-                A.IAASharpen(),
-                A.IAAEmboss(),
+                A.IAASharpen(), # may be wrong
+                A.IAAEmboss(), # may be wrong 
                 A.RandomBrightnessContrast(),
             ], p=0.3),
             A.HueSaturationValue(p=0.3),
@@ -36,7 +36,8 @@ class DataAugmentation:
     def augment(self, image):
         return self.transform(image=image)['image']
 
-def apply_augmentation(input_dir, output_dir, num_augmentations=5):
+
+def apply_augmentation(input_dir, output_dir, num_augmentations=2): # augmentation for every of photos
     input_path = Path(input_dir)
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
