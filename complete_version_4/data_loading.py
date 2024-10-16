@@ -1,23 +1,21 @@
-import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
 from pathlib import Path
-import numpy as np
 
 class ShipDataset(Dataset):
     def __init__(self, root_dir, transform=None):
         self.root_dir = Path(root_dir)
-        self.image_files = list(self.root_dir.glob('*.png'))
+        self.image_files = list(self.root_dir.glob('*.png')) # solely png
         self.transform = transform or transforms.Compose([
-            transforms.Resize((640, 640)),
+            transforms.Resize((640, 640)), # solely 640^2 as input
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         self.labels = self._load_labels()
 
     def _load_labels(self):
-        label_file = self.root_dir.parent / 'labels.txt'
+        label_file = self.root_dir.parent / 'labels.txt' # labels, if exists
         labels = {}
         with open(label_file, 'r') as f:
             for line in f:
@@ -30,10 +28,11 @@ class ShipDataset(Dataset):
 
     def __getitem__(self, idx):
         img_path = self.image_files[idx]
-        image = Image.open(img_path).convert('RGB')
+        image = Image.open(img_path).convert('RGB') # RGB as in real data (prod.)
         image = self.transform(image)
         label = self.labels[img_path.name]
         return image, label
+
 
 def get_dataloader(data_dir, batch_size=32, num_workers=4):
     dataset = ShipDataset(data_dir)
