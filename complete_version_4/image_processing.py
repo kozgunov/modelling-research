@@ -7,6 +7,7 @@ import torchvision.transforms as T
 import cv2
 from data_loading import ShipDataset
 
+
 class ImageProcessor:
     def __init__(self, model, input_dir='input', output_dir='output'):
         self.model = model
@@ -14,6 +15,7 @@ class ImageProcessor:
         self.output_dir = Path(output_dir)
         if not self.output_dir.exists():
             self.output_dir.mkdir(parents=True, exist_ok=True)
+        # for training using only 640x640
         self.transforms = T.Compose([
             T.Resize((640, 640)),
             T.ToTensor(),
@@ -22,12 +24,13 @@ class ImageProcessor:
 
     def process_and_save_images(self):
         class_counts = {}
-        images = list(self.input_dir.glob('*.png'))
+        images = list(self.input_dir.glob('*.png'))  # png is smaller than jpg/jpeg
         for image_path in images:
-            image = Image.open(image_path).convert('RGB')
+            image = Image.open(image_path).convert('RGB')  # take all photos from input dir
             results = self.model.get_model()(image)
 
-            for _, _, _, _, _, cls in results.xyxy[0].numpy():
+            for _, _, _, _, _, cls in results.xyxy[
+                0].numpy():  # classes are 1. buoy, 2. number, 3-4. model with/without number, 5. special buoy, 6. trace
                 cls_name = self.model.get_model().names[int(cls)]
                 class_counts[cls_name] = class_counts.get(cls_name, 0) + 1
 
@@ -35,7 +38,7 @@ class ImageProcessor:
 
         self.plot_class_distribution(class_counts)
 
-    def visualize_results(self, image, results, filename):
+    def visualize_results(self, image, results, filename):  # show the result
         plt.figure(figsize=(10, 10))
         plt.imshow(image)
         plt.axis('off')
@@ -43,12 +46,13 @@ class ImageProcessor:
         for xmin, ymin, xmax, ymax, conf, cls in results.xyxy[0].numpy():
             rect = plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, fill=False, color='red', linewidth=2)
             plt.gca().add_patch(rect)
-            plt.gca().text(xmin, ymin, f'{self.model.get_model().names[int(cls)]} {conf:.2f}', bbox=dict(facecolor='yellow', alpha=0.5), fontsize=10, color='black')
+            plt.gca().text(xmin, ymin, f'{self.model.get_model().names[int(cls)]} {conf:.2f}',
+                           bbox=dict(facecolor='yellow', alpha=0.5), fontsize=10, color='black')
 
         plt.savefig(self.output_dir / filename)
         plt.close()
 
-    def plot_class_distribution(self, class_counts):
+    def plot_class_distribution(self, class_counts):  # show dirty stats
         plt.figure(figsize=(10, 6))
         plt.bar(class_counts.keys(), class_counts.values(), color='blue')
         plt.xlabel('Classes')
@@ -60,34 +64,36 @@ class ImageProcessor:
 
     def preprocess(self, image_path):
         dataset = ShipDataset(image_path, transform=self.transforms)
-        return dataset[0][0]  # Return the first item's image
+        return dataset[0][0]  # return the first item's image
 
     def analyze_image(self, image_path):
         image = Image.open(image_path).convert('RGB')
-        image_tensor = torch.tensor(np.array(image) / 255.0).permute(2, 0, 1).unsqueeze(0).float().to(self.model.get_device())
+        image_tensor = torch.tensor(np.array(image) / 255.0).permute(2, 0, 1).unsqueeze(0).float().to(
+            self.model.get_device())  # figure out  the  outlines
 
         with torch.no_grad():
             results = self.model.get_model()(image_tensor)
 
         self.visualize_results(image, results, f"analyzed_{Path(image_path).name}")
 
-        plt.figure(figsize=(10, 10)) # visualize results
+        plt.figure(figsize=(10, 10))  # visualize results
         plt.imshow(image)
         plt.axis('off')
 
-        for xmin, ymin, xmax, ymax, conf, cls in results.xyxy[0].cpu().numpy(): # draw bounding boxes and labels
+        for xmin, ymin, xmax, ymax, conf, cls in results.xyxy[0].cpu().numpy():  # draw bounding boxes and labels
             rect = plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, fill=False, color='red', linewidth=2)
             plt.gca().add_patch(rect)
-            plt.gca().text(xmin, ymin - 10, f'{self.model.get_model().names[int(cls)]} {conf:.2f}', bbox=dict(facecolor='yellow', alpha=0.5), fontsize=10, color='black')
+            plt.gca().text(xmin, ymin - 10, f'{self.model.get_model().names[int(cls)]} {conf:.2f}',
+                           bbox=dict(facecolor='yellow', alpha=0.5), fontsize=10, color='black')
         plt.show()
 
     def process_frame(self, frame):
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         input_tensor = self.transforms(Image.fromarray(frame_rgb)).unsqueeze(0).to(self.model.get_device())
-        
+
         with torch.no_grad():
             results = self.model(input_tensor)
-        
+
         detections = []
         for *xyxy, conf, cls in results.xyxy[0].cpu().numpy():
             detections.append({
@@ -95,7 +101,7 @@ class ImageProcessor:
                 'class': int(cls),
                 'confidence': float(conf)
             })
-        
+
         return detections
 
     def detect_colors(self, frame, tracked_objects):
@@ -111,7 +117,7 @@ class ImageProcessor:
         annotated_frame = frame.copy()
         for obj in tracked_objects:
             x1, y1, x2, y2 = map(int, obj['bbox'])
-            color = obj.get('color', (0, 255, 0))  # Default to green if color not set
+            color = obj.get('color', (0, 255, 0))  # default to green if color not set ----- makes random color --------
             cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), color, 2)
             label = f"Ship {obj['id']}: {obj['class']}"
             if obj.get('occluded', False):
